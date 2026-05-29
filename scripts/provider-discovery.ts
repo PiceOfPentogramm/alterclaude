@@ -1,0 +1,15 @@
+export {
+  benchmarkOllamaModel,
+  DEFAULT_ATOMIC_CHAT_BASE_URL,
+  DEFAULT_OLLAMA_BASE_URL,
+  getAtomicChatApiBaseUrl,
+  getAtomicChatChatBaseUrl,
+  getOllamaApiBaseUrl,
+  getOllamaChatBaseUrl,
+  hasLocalAtomicChat,
+  hasLocalOllama,
+  listAtomicChatModels,
+  listOllamaModels,
+  listOpenRouterModels,
+  DEFAULT_OPENROUTER_BASE_URL,
+} from '../src/utils/providerDiscovery.ts'
