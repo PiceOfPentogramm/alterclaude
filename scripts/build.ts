@@ -61,7 +61,7 @@ const result = await Bun.build({
     'MACRO.BUILD_TIME': JSON.stringify(new Date().toISOString()),
     'MACRO.ISSUES_EXPLAINER':
       JSON.stringify('report the issue at https://github.com/PiceOfPentogramm/alterclaude/issues'),
-    'MACRO.PACKAGE_URL': JSON.stringify('@gitlawb/alterclaude'),
+    'MACRO.PACKAGE_URL': JSON.stringify('@piceofpentogramm/alterclaude'),
     'MACRO.NATIVE_PACKAGE_URL': 'undefined',
   },
   plugins: [

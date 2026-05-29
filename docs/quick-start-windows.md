@@ -18,7 +18,7 @@ npm --version
 ## 2. Install AlterClaude
 
 ```powershell
-npm install -g @gitlawb/alterclaude
+npm install -g @piceofpentogramm/alterclaude
 ```
 
 ## 3. Pick One Provider
@@ -92,13 +92,13 @@ Check the basics:
 ## 6. Updating AlterClaude
 
 ```powershell
-npm install -g @gitlawb/alterclaude@latest
+npm install -g @piceofpentogramm/alterclaude@latest
 ```
 
 ## 7. Uninstalling AlterClaude
 
 ```powershell
-npm uninstall -g @gitlawb/alterclaude
+npm uninstall -g @piceofpentogramm/alterclaude
 ```
 
 ## Need Advanced Setup?

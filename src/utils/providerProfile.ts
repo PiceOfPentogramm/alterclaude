@@ -548,15 +548,15 @@ export async function buildLaunchEnv(options: {
     delete env.CLAUDE_CODE_USE_GITHUB
 
     env.GEMINI_MODEL =
-      shellGeminiModel ||
       persistedGeminiModel ||
+      shellGeminiModel ||
       DEFAULT_GEMINI_MODEL
     env.GEMINI_BASE_URL =
-      shellGeminiBaseUrl ||
       persistedGeminiBaseUrl ||
+      shellGeminiBaseUrl ||
       DEFAULT_GEMINI_BASE_URL
 
-    const geminiKey = shellGeminiKey || persistedGeminiKey
+    const geminiKey = persistedGeminiKey || shellGeminiKey
     if (geminiKey) {
       env.GEMINI_API_KEY = geminiKey
     } else {
@@ -602,17 +602,17 @@ export async function buildLaunchEnv(options: {
     )
 
     env.OPENROUTER_MODEL =
-      shellOpenRouterModel ||
       persistedOpenRouterModel ||
+      shellOpenRouterModel ||
       DEFAULT_OPENROUTER_MODEL
     env.OPENROUTER_BASE_URL =
-      shellOpenRouterBaseUrl ||
       persistedOpenRouterBaseUrl ||
+      shellOpenRouterBaseUrl ||
       DEFAULT_OPENROUTER_BASE_URL
 
     const openRouterKey =
-      sanitizeApiKey(processEnv.OPENROUTER_API_KEY) ||
-      sanitizeApiKey(persistedEnv.OPENROUTER_API_KEY)
+      sanitizeApiKey(persistedEnv.OPENROUTER_API_KEY) ||
+      sanitizeApiKey(processEnv.OPENROUTER_API_KEY)
     if (openRouterKey) {
       env.OPENROUTER_API_KEY = openRouterKey
     } else {
@@ -705,8 +705,8 @@ export async function buildLaunchEnv(options: {
     delete env.OPENAI_API_KEY
 
     const codexKey =
-      sanitizeApiKey(processEnv.CODEX_API_KEY) ||
-      sanitizeApiKey(persistedEnv.CODEX_API_KEY)
+      sanitizeApiKey(persistedEnv.CODEX_API_KEY) ||
+      sanitizeApiKey(processEnv.CODEX_API_KEY)
     const liveCodexCredentials = resolveCodexApiCredentials(processEnv)
     const codexAccountId =
       processEnv.CHATGPT_ACCOUNT_ID ||
@@ -747,14 +747,14 @@ export async function buildLaunchEnv(options: {
     persistedOpenAIRequest.transport === 'chat_completions'
 
   env.OPENAI_BASE_URL =
-    (useShellOpenAIConfig ? shellOpenAIBaseUrl : undefined) ||
-    (usePersistedOpenAIConfig ? persistedOpenAIBaseUrl : undefined) ||
-    DEFAULT_OPENAI_BASE_URL
+      (usePersistedOpenAIConfig ? persistedOpenAIBaseUrl : undefined) ||
+      (useShellOpenAIConfig ? shellOpenAIBaseUrl : undefined) ||
+      DEFAULT_OPENAI_BASE_URL
   env.OPENAI_MODEL =
-    (useShellOpenAIConfig ? shellOpenAIModel : undefined) ||
     (usePersistedOpenAIConfig ? persistedOpenAIModel : undefined) ||
+    (useShellOpenAIConfig ? shellOpenAIModel : undefined) ||
     defaultOpenAIModel
-  env.OPENAI_API_KEY = processEnv.OPENAI_API_KEY || persistedEnv.OPENAI_API_KEY
+  env.OPENAI_API_KEY = persistedEnv.OPENAI_API_KEY || processEnv.OPENAI_API_KEY
   delete env.CODEX_API_KEY
   delete env.CHATGPT_ACCOUNT_ID
   delete env.CODEX_ACCOUNT_ID
@@ -769,26 +769,29 @@ export async function buildStartupEnvFromProfile(options?: {
   resolveOllamaDefaultModel?: (goal: RecommendationGoal) => Promise<string>
 }): Promise<NodeJS.ProcessEnv> {
   const processEnv = options?.processEnv ?? process.env
+  const persisted = options?.persisted ?? loadProfileFile()
+
+  // If a profile exists, always load it — it should have priority over
+  // stale shell env vars (e.g. CLAUDE_CODE_USE_OPENROUTER=1 with old key).
+  if (persisted) {
+    return buildLaunchEnv({
+      profile: persisted.profile,
+      persisted,
+      goal:
+        options?.goal ??
+        normalizeRecommendationGoal(processEnv.ALTERCLAUDE_PROFILE_GOAL),
+      processEnv,
+      getOllamaChatBaseUrl:
+        options?.getOllamaChatBaseUrl ?? getOllamaChatBaseUrl,
+      resolveOllamaDefaultModel: options?.resolveOllamaDefaultModel,
+    })
+  }
+
   if (hasExplicitProviderSelection(processEnv)) {
     return processEnv
   }
 
-  const persisted = options?.persisted ?? loadProfileFile()
-  if (!persisted) {
-    return processEnv
-  }
-
-  return buildLaunchEnv({
-    profile: persisted.profile,
-    persisted,
-    goal:
-      options?.goal ??
-      normalizeRecommendationGoal(processEnv.ALTERCLAUDE_PROFILE_GOAL),
-    processEnv,
-    getOllamaChatBaseUrl:
-      options?.getOllamaChatBaseUrl ?? getOllamaChatBaseUrl,
-    resolveOllamaDefaultModel: options?.resolveOllamaDefaultModel,
-  })
+  return processEnv
 }
 
 /**
@@ -842,7 +845,7 @@ export function applyProfileEnvToProcessEnv(
   targetEnv: NodeJS.ProcessEnv,
   nextEnv: NodeJS.ProcessEnv,
 ): void {
-  if (nextEnv.CLAUDE_CODE_USE_OPENROUTER && !targetEnv.OPENAI_API_KEY && nextEnv.OPENROUTER_API_KEY) {
+  if (nextEnv.CLAUDE_CODE_USE_OPENROUTER && nextEnv.OPENROUTER_API_KEY) {
     nextEnv.OPENAI_API_KEY = nextEnv.OPENROUTER_API_KEY
     nextEnv.OPENAI_BASE_URL = nextEnv.OPENAI_BASE_URL || nextEnv.OPENROUTER_BASE_URL
     nextEnv.OPENAI_MODEL = nextEnv.OPENAI_MODEL || nextEnv.OPENROUTER_MODEL

@@ -28,6 +28,7 @@ import {
   createProfileFile,
   DEFAULT_GEMINI_BASE_URL,
   DEFAULT_GEMINI_MODEL,
+  DEFAULT_OPENROUTER_MODEL,
   deleteProfileFile,
   loadProfileFile,
   maskSecretForDisplay,
@@ -263,6 +264,24 @@ function buildSavedProfileSummary(
           process.env,
           env,
         ),
+      }
+    case 'openrouter':
+      return {
+        providerLabel: 'OpenRouter',
+        modelLabel: getSafeDisplayValue(
+          env.OPENROUTER_MODEL ?? DEFAULT_OPENROUTER_MODEL,
+          process.env,
+          env,
+        ),
+        endpointLabel: getSafeDisplayValue(
+          env.OPENROUTER_BASE_URL ?? OPENROUTER_BASE_URL,
+          process.env,
+          env,
+        ),
+        credentialLabel:
+          maskSecretForDisplay(env.OPENROUTER_API_KEY) !== undefined
+            ? 'configured'
+            : undefined,
       }
     case 'openai':
     default:

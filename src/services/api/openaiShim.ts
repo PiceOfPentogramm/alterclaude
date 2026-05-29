@@ -835,16 +835,31 @@ class OpenAIShimMessages {
       }
     }
 
-    const headers: Record<string, string> = {
+const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...this.defaultHeaders,
       ...(options?.headers ?? {}),
     }
 
+    // Strip any pre-existing Authorization from defaultHeaders (Anthropic auth)
+    // — it will be replaced below with the correct key for this provider.
+    delete headers.Authorization
+
     const apiKey = process.env.OPENAI_API_KEY ?? ''
     const isAzure = /cognitiveservices\.azure\.com|openai\.azure\.com/.test(request.baseUrl)
 
-    if (apiKey) {
+    const isOpenRouter = isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENROUTER)
+
+    if (isOpenRouter) {
+      const orKey = process.env.OPENROUTER_API_KEY ?? ''
+      if (orKey) {
+        headers.Authorization = `Bearer ${orKey}`
+      }
+      headers['HTTP-Referer'] = process.env.OPENROUTER_REFERER ?? 'https://github.com/PiceOfPentogramm/alterclaude'
+      headers['X-Title'] = process.env.OPENROUTER_TITLE ?? 'AlterClaude'
+    }
+
+    if (!isOpenRouter && apiKey) {
       if (isAzure) {
         // Azure uses api-key header instead of Bearer token
         headers['api-key'] = apiKey
@@ -858,10 +873,15 @@ class OpenAIShimMessages {
       headers['X-GitHub-Api-Version'] = GITHUB_API_VERSION
     }
 
-    const isOpenRouter = isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENROUTER)
-    if (isOpenRouter) {
-      headers['HTTP-Referer'] = process.env.OPENROUTER_REFERER ?? 'https://github.com/PiceOfPentogramm/alterclaude'
-      headers['X-Title'] = process.env.OPENROUTER_TITLE ?? 'AlterClaude'
+    // Debug: log what's being sent for OpenRouter
+    if (isOpenRouter && process.env.ALTERCLAUDE_DEBUG) {
+      process.stderr.write(`\n[ALTERCLAUDE_DEBUG] OR key set: ${!!headers.Authorization}\n`)
+      process.stderr.write(`[ALTERCLAUDE_DEBUG] Auth header length: ${(headers.Authorization || '').length}\n`)
+      process.stderr.write(`[ALTERCLAUDE_DEBUG] Auth starts with: ${(headers.Authorization || '').slice(0, 15)}\n`)
+      process.stderr.write(`[ALTERCLAUDE_DEBUG] OPENROUTER_API_KEY env: ${!!process.env.OPENROUTER_API_KEY}\n`)
+      process.stderr.write(`[ALTERCLAUDE_DEBUG] OPENAI_API_KEY env: ${!!process.env.OPENAI_API_KEY}\n`)
+      process.stderr.write(`[ALTERCLAUDE_DEBUG] CLAUDE_CODE_USE_OPENROUTER: ${process.env.CLAUDE_CODE_USE_OPENROUTER}\n`)
+      process.stderr.write(`[ALTERCLAUDE_DEBUG] ANTHROPIC_AUTH_TOKEN env: ${!!process.env.ANTHROPIC_AUTH_TOKEN}\n`)
     }
 
     // Build the chat completions URL
@@ -884,6 +904,21 @@ class OpenAIShimMessages {
       }
     } else {
       chatCompletionsUrl = `${request.baseUrl}/chat/completions`
+    }
+
+    // Debug: log what's being sent for OpenRouter
+    if (isOpenRouter && process.env.ALTERCLAUDE_DEBUG) {
+      const fs = await import('fs')
+      const msg = [
+        `\n[ALTERCLAUDE_DEBUG] OR key set: ${!!headers.Authorization}`,
+        `[ALTERCLAUDE_DEBUG] Auth header: ${headers.Authorization || '(none)'}`,
+        `[ALTERCLAUDE_DEBUG] OPENROUTER_API_KEY env: ${!!process.env.OPENROUTER_API_KEY}`,
+        `[ALTERCLAUDE_DEBUG] OPENAI_API_KEY env: ${!!process.env.OPENAI_API_KEY}`,
+        `[ALTERCLAUDE_DEBUG] CLAUDE_CODE_USE_OPENROUTER: ${process.env.CLAUDE_CODE_USE_OPENROUTER}`,
+        `[ALTERCLAUDE_DEBUG] ANTHROPIC_AUTH_TOKEN env: ${!!process.env.ANTHROPIC_AUTH_TOKEN}`,
+        `[ALTERCLAUDE_DEBUG] Chat URL: ${chatCompletionsUrl}`,
+      ].join('\n')
+      fs.appendFileSync('C:\\Users\\Kris\\alterclaude-debug.log', msg)
     }
 
     const fetchInit = {

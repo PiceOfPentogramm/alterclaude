@@ -1,6 +1,6 @@
 {
-  "name": "@gitlawb/alterclaude",
-  "version": "0.1.0",
+  "name": "@piceofpentogramm/alterclaude",
+  "version": "0.1.8",
   "description": "Claude Code opened to any LLM — OpenAI, Gemini, DeepSeek, Ollama, and 200+ models",
   "type": "module",
   "bin": {
